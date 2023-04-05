@@ -27,11 +27,22 @@ const initializeDBAndServer = async () => {
 
 initializeDBAndServer();
 
+const convert = (dbObject) => {
+  return {
+    movieId: dbObject.movie_id,
+    directorId: dbObject.director_id,
+    directorName: dbObject.director_name,
+    movieName: dbObject.movie_name,
+    leadActor: dbObject.lead_actor,
+  };
+};
+
 //GET all API
 
 app.get("/movies/", async (request, response) => {
   const getMoviesQuery = `
-        SELECT movie_name FROM movie
+        SELECT movie_name as movieName
+        FROM movie
         ORDER BY movie_id;
     `;
   const movieArray = await db.all(getMoviesQuery);
@@ -41,14 +52,6 @@ app.get("/movies/", async (request, response) => {
 //POST movie API
 
 app.post("/movies/", async (request, response) => {
-  const convert = (dbObject) => {
-    return {
-      movieId: dbObject.movie_id,
-      directorId: dbObject.director_id,
-      movieName: dbObject.movie_name,
-      leadActor: dbObject.lead_actor,
-    };
-  };
   const movieDetails = request.body;
   const { directorId, movieName, leadActor } = movieDetails;
   const addMovieQuery = `
@@ -77,7 +80,7 @@ app.get("/movies/:movieId/", async (request, response) => {
             movie_id = ${movieId};
     `;
   const movie = await db.get(getMovieQuery);
-  response.send(movie);
+  response.send(convert(movie));
 });
 
 //PUT movie API
@@ -115,11 +118,11 @@ app.delete("/movies/:movieId/", async (request, response) => {
 
 app.get("/directors/", async (request, response) => {
   const getDirectorQuery = `
-        SELECT * FROM director
-        ORDER BY director_id;
+        SELECT * 
+        FROM director;
     `;
   const directorArray = await db.all(getDirectorQuery);
-  response.send(directorArray);
+  response.send(directorArray.map((eachDirector) => convert(eachDirector)));
 });
 
 //GET dir_mov API
@@ -127,7 +130,8 @@ app.get("/directors/", async (request, response) => {
 app.get("/directors/:directorId/movies/", async (request, response) => {
   const { directorId } = request.params;
   const getMovieName = `
-        SELECT movie_name FROM movie
+        SELECT movie_name as movieName
+        FROM movie
         WHERE director_id = ${directorId};
     `;
   const movie = await db.all(getMovieName);
